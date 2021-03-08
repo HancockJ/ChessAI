@@ -34,15 +34,13 @@ public class JCHA265 extends Agent {
 		Iterator<State> iterator = current.next().iterator();
 		while(!current.budget.hasBeenExhausted() && iterator.hasNext())
 			children.add(iterator.next());
-		// Pick a next move at random.
-		Result choice;
-		if (current.player.equals(Player.BLACK)) {
-			choice = findMin(current, 3, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-		}else {
-			choice = findMax(current, 3, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-		}
+//		if (current.player.equals(Player.BLACK)) {
+//			choice = findMin(current, 3, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+//		}else {
+//			choice = findMax(current, 3, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+//		}
 
-		return choice.state;
+		return IDDFS(current, 3).state;
 	}
 	
 	private static int utility(State state) {
@@ -101,26 +99,28 @@ public class JCHA265 extends Agent {
 	private Result IDDFS(State current, int limit) {
 		Result best = new Result(current, 0, 0, 0);
 		for (int depth = 1; depth <= limit; depth++) {
-			SearchBudget sb = new SearchBudget(500000, 300000);
 			Result temp;
 			if (current.player.equals(Player.BLACK)) {
 				temp = findMin(current, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 			}else {
 				temp = findMax(current, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 			}
+			if(temp.state.budget.getOperations() < 499998) {
+				best = temp;
+			}else {
+				return best;
+			}
 		}
 		return best;
 	}
 	
-	
 	private Result findMax(State current, int distance, double a, double b) {
-		if(current.over){
+		if(current.over)
 			return new Result(current, utility(current), a, b);
-		}
-		if (distance == 0) {
+		if (distance == 0)
 			return new Result(current, material(current.board, current.player), a, b);
-		}
-		distance -= 1;
+		if (current.budget.getOperations() > 499999)
+			return new Result(current, 0, a, b);
 		Result best = new Result(current, Double.NEGATIVE_INFINITY, a, b);
 		for (State i: current.next()) {
 			double child_value = findMin(i, distance, a, b).value;
@@ -131,17 +131,19 @@ public class JCHA265 extends Agent {
 				return best;
 			}
 			a = Math.max(a, best.value);
+			if (current.budget.getOperations() > 499999)
+				return new Result(current, 0, a, b);
 		}
 		return best;
 	}
 	
 	private Result findMin(State current, int distance, double a, double b) {
-		if(current.over){
+		if(current.over)
 			return new Result(current, utility(current), a, b);
-		}
-		if (distance == 0) {
+		if (distance == 0)
 			return new Result(current, material(current.board, current.player), a, b);
-		}
+		if (current.budget.getOperations() > 499999)
+			return new Result(current, 0, a, b);
 		distance -= 1;
 		Result best = new Result(current, Double.POSITIVE_INFINITY, a, b);
 		for (State i: current.next()) {
@@ -153,6 +155,9 @@ public class JCHA265 extends Agent {
 				return best;
 			}
 			b = Math.min(b, best.value);
+			if (current.budget.getOperations() > 499999)
+				return new Result(current, 0, a, b);
+
 		}
 		return best;
 	}
